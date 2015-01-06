@@ -23,12 +23,13 @@ struct TableRow
 };
 
 
-int midpoint (int start, int end);
+int mid_point (int start, int end);
 int find_starting_id (int lower_bound, int start_index, int end_index, struct Story** events);
-struct TableRow* copy_table_row (struct TableRow* to_copy, int num_values);
+struct TableRow* malloc_table_row (int num_values);
+void copy_table_row (struct TableRow* to_copy, struct TableRow* to_return, int num_values);
 
 
-int main (int argc, int* argv)
+int main (int argc, char** argv)
 {
 	char* line = getLine (stdin);
 	int N;
@@ -64,9 +65,9 @@ int main (int argc, int* argv)
 			free(line);
 			int starting_id = find_starting_id (time > W ? time-W : 0, 0, num_stories-1, events);
 			int num_events = num_stories-starting_id;
-			struct TableRow* zero_row = malloc (sizeof (TableRow*));
-			zero_row->values = calloc (num_events*sizeof (int));
-			zero_row->total_socre = 0;
+			struct TableRow* zero_row = malloc (sizeof (struct TableRow*));
+			zero_row->values = calloc (num_events, sizeof (int));
+			zero_row->total_score = 0;
 			zero_row->num_ones = 0;
 			char* binary_string = malloc ((num_events+1)*sizeof (char));
 			for (int i = 0; i < num_events; i++){
@@ -112,7 +113,7 @@ int main (int argc, int* argv)
 							}
 							if (new_best == TRUE){
 								copy_table_row (current_best, table_row_of_interest, num_events);
-								current_best->total_socre = new_total;
+								current_best->total_score = new_total;
 								current_best->num_ones += 1;
 								current_best->values[story_id-num_events] = 1;
 								current_best->binary_string[story_id-num_events] = '1';
@@ -141,7 +142,7 @@ int find_starting_id (int lower_bound, int start_index, int end_index, struct St
 	if (end_index < start_index){
 		return start_index;
 	} else {
-		int midpoint = midpoint (start_index, end_index);
+		int midpoint = mid_point (start_index, end_index);
 		int to_compare = events[midpoint]->time;
 		if (to_compare < lower_bound){
 			// need to go right
@@ -155,7 +156,7 @@ int find_starting_id (int lower_bound, int start_index, int end_index, struct St
 	}
 }
 
-int midpoint (int start, int end)
+int mid_point (int start, int end)
 {
 	return start+((end-start)/2);
 }
