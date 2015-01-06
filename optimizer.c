@@ -122,9 +122,17 @@ int main (int argc, int* argv)
 				}
 				table[table_row_index] = current_best;
 			}
-
+			printf ("%d %d", table[H]->total_score, table[H]->num_ones);
+			int* values = table[H]->values;
+			for (int i = 0; i < num_events; i++){
+				if (values[i] == 1){
+					printf (" %d", starting_id+i);
+				}
+			}
+			printf ("\n");
 		}
 	}
+	return 1;
 }
 
 
@@ -168,12 +176,4 @@ void copy_table_row (struct TableRow* to_copy, struct TableRow* to_return, int n
 	memcpy (to_return->values, to_copy->values, num_values*sizeof (int));
 	memcpy (to_return->binary_string, to_copy->binary_string, (num_values+1)*sizeof (char));
 }
-
-
-
-
-
-
-
-
 
