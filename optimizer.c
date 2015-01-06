@@ -9,6 +9,7 @@
 
 
 void print_entries (struct TableRow* table_row, int num_entries);
+void free_table (struct TableRow** table, int length);
 
 
 int main (int argc, char** argv)
@@ -46,8 +47,6 @@ int main (int argc, char** argv)
 			int time = strtol (line+2, &where_end, 10);
 			free(line);
 			int starting_id = find_starting_id (time > W ? time-W : 0, 0, num_stories-1, events);
-			//printf ("starting id: %d\n", starting_id);
-			//printf("num stories: %d\n", num_stories);
 			int num_events = num_stories-starting_id;
 			struct TableRow* zero_row = malloc (sizeof (struct TableRow));
 			zero_row->values = calloc (num_events, sizeof (int));
@@ -57,36 +56,24 @@ int main (int argc, char** argv)
 			for (int j = 0; j < num_events; j++){
 				binary_string[j] = '0';
 			}
+			binary_string[num_events] = '\0';
 			zero_row->binary_string = binary_string;
 			table[0] = zero_row;
 
 
 			// now we need to create the table. iteratively
 			for (int table_row_index = 1; table_row_index < H+1; table_row_index++){
-				//printf ("table row index: %d\n", table_row_index);
 				struct TableRow* current_best = malloc_table_row (num_events);
 				copy_table_row (table[table_row_index-1], current_best, num_events);
 				for (int story_id = starting_id; story_id < num_stories; story_id++){
 					int current_best_score = current_best->total_score;
-					//printf ("\tcurrent best score: %d\n", current_best_score);
-					//printf ("\tstory_id: %d\n", story_id);
 					struct Story* story_of_interest = events[story_id];
 					int height = story_of_interest->height;
-					//printf ("\t\theight: %d\n", height);
 					if (table_row_index-height < 0){
 						continue;
 					} else {
 						// of_interest can possibly be added to the list
 						struct TableRow* table_row_of_interest = table[table_row_index-height];
-						/*
-						printf("\t\t\t%p %p\n", (void *) table_row_of_interest->values, (void *) table[0]->values);
-						printf ("\t\t\ttable row of interest: %d\n", table_row_index-height);
-						printf ("\t\t\tnew potential total: %d\n", table_row_of_interest->total_score + story_of_interest->score);
-						printf ("\t\t\tvalues: ");
-						print_entries (table_row_of_interest, num_events);
-						printf ("\n");
-						*/
-
 						if (table_row_of_interest->values[story_id-starting_id] == 0){
 							// it's not yet in the list and can be added!
 							int new_best = FALSE;
@@ -110,7 +97,6 @@ int main (int argc, char** argv)
 							}
 							if (new_best == TRUE){
 								copy_table_row (table_row_of_interest, current_best, num_events);
-								// printf ("old total, new total %d %d\n", current_best->total_score, new_total);
 								current_best->total_score = new_total;
 								current_best->num_ones += 1;
 								current_best->values[story_id-starting_id] = 1;
@@ -129,8 +115,13 @@ int main (int argc, char** argv)
 				}
 			}
 			printf ("\n");
+			free_table (table, H+1);
 		}
 	}
+	for (int i = 0; i < num_stories; i++){
+		free (events[i]);
+	}
+	free (events);
 	return 1;
 }
 
@@ -188,4 +179,15 @@ void print_entries (struct TableRow* table_row, int num_entries)
 			printf ("%d, ", i);
 		}
 	}
+}
+
+void free_table (struct TableRow** table, int length)
+{
+	for (int i = 0; i < length; i++){
+		struct TableRow* of_interest = table[i];
+		free (of_interest->values);
+		free (of_interest->binary_string);
+		free(of_interest);
+	}
+	free (table);
 }
