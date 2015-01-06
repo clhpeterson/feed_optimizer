@@ -8,6 +8,9 @@
 #define FALSE 0
 
 
+void print_entries (struct TableRow* table_row, int num_entries);
+
+
 int main (int argc, char** argv)
 {
 	char* line = getLine (stdin);
@@ -43,14 +46,16 @@ int main (int argc, char** argv)
 			int time = strtol (line+2, &where_end, 10);
 			free(line);
 			int starting_id = find_starting_id (time > W ? time-W : 0, 0, num_stories-1, events);
+			//printf ("starting id: %d\n", starting_id);
+			//printf("num stories: %d\n", num_stories);
 			int num_events = num_stories-starting_id;
-			struct TableRow* zero_row = malloc (sizeof (struct TableRow*));
+			struct TableRow* zero_row = malloc (sizeof (struct TableRow));
 			zero_row->values = calloc (num_events, sizeof (int));
 			zero_row->total_score = 0;
 			zero_row->num_ones = 0;
 			char* binary_string = malloc ((num_events+1)*sizeof (char));
-			for (int i = 0; i < num_events; i++){
-				binary_string[i] = '0';
+			for (int j = 0; j < num_events; j++){
+				binary_string[j] = '0';
 			}
 			zero_row->binary_string = binary_string;
 			table[0] = zero_row;
@@ -58,18 +63,31 @@ int main (int argc, char** argv)
 
 			// now we need to create the table. iteratively
 			for (int table_row_index = 1; table_row_index < H+1; table_row_index++){
+				//printf ("table row index: %d\n", table_row_index);
 				struct TableRow* current_best = malloc_table_row (num_events);
-				copy_table_row (current_best, table[i-1], num_events);
-				int current_best_score = current_best->total_score;
+				copy_table_row (table[table_row_index-1], current_best, num_events);
 				for (int story_id = starting_id; story_id < num_stories; story_id++){
+					int current_best_score = current_best->total_score;
+					//printf ("\tcurrent best score: %d\n", current_best_score);
+					//printf ("\tstory_id: %d\n", story_id);
 					struct Story* story_of_interest = events[story_id];
 					int height = story_of_interest->height;
+					//printf ("\t\theight: %d\n", height);
 					if (table_row_index-height < 0){
 						continue;
 					} else {
 						// of_interest can possibly be added to the list
 						struct TableRow* table_row_of_interest = table[table_row_index-height];
-						if (table_row_of_interest->values[story_id-num_events] == 0){
+						/*
+						printf("\t\t\t%p %p\n", (void *) table_row_of_interest->values, (void *) table[0]->values);
+						printf ("\t\t\ttable row of interest: %d\n", table_row_index-height);
+						printf ("\t\t\tnew potential total: %d\n", table_row_of_interest->total_score + story_of_interest->score);
+						printf ("\t\t\tvalues: ");
+						print_entries (table_row_of_interest, num_events);
+						printf ("\n");
+						*/
+
+						if (table_row_of_interest->values[story_id-starting_id] == 0){
 							// it's not yet in the list and can be added!
 							int new_best = FALSE;
 							int new_total = table_row_of_interest->total_score + story_of_interest->score;
@@ -83,7 +101,7 @@ int main (int argc, char** argv)
 								} else if (new_num_ones == old_num_ones){
 									char* temp_binary_string = malloc ((num_events+1)*sizeof (char));
 									memcpy (temp_binary_string, table_row_of_interest->binary_string, (num_events+1)*sizeof (char));
-									temp_binary_string[story_id-num_events] = '1';
+									temp_binary_string[story_id-starting_id] = '1';
 									if (strcmp(temp_binary_string, current_best->binary_string) > 0){
 										new_best = TRUE;
 									}
@@ -91,11 +109,12 @@ int main (int argc, char** argv)
 								}
 							}
 							if (new_best == TRUE){
-								copy_table_row (current_best, table_row_of_interest, num_events);
+								copy_table_row (table_row_of_interest, current_best, num_events);
+								// printf ("old total, new total %d %d\n", current_best->total_score, new_total);
 								current_best->total_score = new_total;
 								current_best->num_ones += 1;
-								current_best->values[story_id-num_events] = 1;
-								current_best->binary_string[story_id-num_events] = '1';
+								current_best->values[story_id-starting_id] = 1;
+								current_best->binary_string[story_id-starting_id] = '1';
 							}
 						}
 					}
@@ -104,9 +123,9 @@ int main (int argc, char** argv)
 			}
 			printf ("%d %d", table[H]->total_score, table[H]->num_ones);
 			int* values = table[H]->values;
-			for (int i = 0; i < num_events; i++){
-				if (values[i] == 1){
-					printf (" %d", starting_id+i);
+			for (int j = 0; j < num_events; j++){
+				if (values[j] == 1){
+					printf (" %d", starting_id+j+1);
 				}
 			}
 			printf ("\n");
@@ -152,8 +171,21 @@ struct TableRow* malloc_table_row (int num_values)
 
 void copy_table_row (struct TableRow* to_copy, struct TableRow* to_return, int num_values)
 {
+	int* hold_values = to_return->values;
+	char* hold_binary_string = to_return->binary_string;
 	memcpy (to_return, to_copy, sizeof (struct TableRow));
+	to_return->values = hold_values;
+	to_return->binary_string = hold_binary_string;
 	memcpy (to_return->values, to_copy->values, num_values*sizeof (int));
 	memcpy (to_return->binary_string, to_copy->binary_string, (num_values+1)*sizeof (char));
 }
 
+void print_entries (struct TableRow* table_row, int num_entries)
+{
+	int* values = table_row->values;
+	for (int i = 0; i < num_entries; i++){
+		if (values[i] == 1){
+			printf ("%d, ", i);
+		}
+	}
+}
