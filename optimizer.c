@@ -74,6 +74,7 @@ int main (int argc, char** argv)
 					} else {
 						// of_interest can possibly be added to the list
 						struct TableRow* table_row_of_interest = table[table_row_index-height];
+						//printf ("\n\tnum events: %d\n\tstory id: %d\n\tstarting id: %d\n\ttable row index: %d\n\theight: %d\n", num_events, story_id, starting_id, table_row_index, height);
 						if (table_row_of_interest->values[story_id-starting_id] == 0){
 							// it's not yet in the list and can be added!
 							int new_best = FALSE;
