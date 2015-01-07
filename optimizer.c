@@ -24,7 +24,13 @@ int main (int argc, char** argv)
 	H = strtol (where_end+1, &where_end, 10);
 	free(line);
 	struct Story** events = malloc (N*sizeof (struct Story*));
+	struct TableRow** table = malloc ((H+1)*sizeof (struct TableRow*));
+	for (int table_row = 0; table_row < H+1; table_row++){
+		table[table_row] = malloc_table_row(W);
+	}
+	struct TableRow* current_best = malloc_table_row (W);
 	int num_stories = 0;
+	struct TableRow* holder;
 	for (int i = 0; i < N; i++){
 		line = getLine (stdin);
 		if (line[0] == 'S'){
@@ -43,28 +49,14 @@ int main (int argc, char** argv)
 		}
 		else {
 			// reload event
-			struct TableRow** table = malloc ((H+1)*sizeof (struct TableRow*));
 			int time = strtol (line+2, &where_end, 10);
 			free(line);
 			int starting_id = find_starting_id (time > W ? time-W : 0, 0, num_stories-1, events);
 			int num_events = num_stories-starting_id;
-			struct TableRow* zero_row = malloc (sizeof (struct TableRow));
-			zero_row->values = calloc (num_events, sizeof (int));
-			zero_row->total_score = 0;
-			zero_row->num_ones = 0;
-			char* binary_string = malloc ((num_events+1)*sizeof (char));
-			for (int j = 0; j < num_events; j++){
-				binary_string[j] = '0';
-			}
-			binary_string[num_events] = '\0';
-			zero_row->binary_string = binary_string;
-			table[0] = zero_row;
-
 
 			// now we need to create the table. iteratively
 			for (int table_row_index = 1; table_row_index < H+1; table_row_index++){
-				struct TableRow* current_best = malloc_table_row (num_events);
-				copy_table_row (table[table_row_index-1], current_best, num_events);
+				copy_table_row (table[table_row_index-1], current_best, W);
 				for (int story_id = starting_id; story_id < num_stories; story_id++){
 					int current_best_score = current_best->total_score;
 					struct Story* story_of_interest = events[story_id];
@@ -97,7 +89,7 @@ int main (int argc, char** argv)
 								}
 							}
 							if (new_best == TRUE){
-								copy_table_row (table_row_of_interest, current_best, num_events);
+								copy_table_row (table_row_of_interest, current_best, W);
 								current_best->total_score = new_total;
 								current_best->num_ones += 1;
 								current_best->values[story_id-starting_id] = 1;
@@ -106,7 +98,10 @@ int main (int argc, char** argv)
 						}
 					}
 				}
+				holder = table[table_row_index];
 				table[table_row_index] = current_best;
+				current_best = holder;
+				
 			}
 			printf ("%d %d", table[H]->total_score, table[H]->num_ones);
 			int* values = table[H]->values;
@@ -116,9 +111,12 @@ int main (int argc, char** argv)
 				}
 			}
 			printf ("\n");
-			free_table (table, H+1);
 		}
 	}
+	free_table (table, H+1);
+	free (current_best->values);
+	free (current_best->binary_string);
+	free (current_best);
 	for (int i = 0; i < num_stories; i++){
 		free (events[i]);
 	}
@@ -154,8 +152,12 @@ int mid_point (int start, int end)
 struct TableRow* malloc_table_row (int num_values)
 {
 	struct TableRow* to_return = malloc (sizeof (struct TableRow));
-	int* new_values = malloc (num_values*sizeof (int));
+	int* new_values = calloc (num_values, sizeof (int));
 	char* new_binary_string = malloc ((num_values+1)*sizeof (char));
+	for (int i = 0; i < num_values+1; i++){
+		new_binary_string[i] = '0';
+	}
+	new_binary_string[num_values] = '\0';
 	to_return->values = new_values;
 	to_return->binary_string = new_binary_string;
 	return to_return;
