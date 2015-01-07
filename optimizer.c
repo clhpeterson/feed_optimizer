@@ -152,6 +152,8 @@ int mid_point (int start, int end)
 struct TableRow* malloc_table_row (int num_values)
 {
 	struct TableRow* to_return = malloc (sizeof (struct TableRow));
+	to_return->total_score = 0;
+	to_return->num_ones = 0;
 	int* new_values = calloc (num_values, sizeof (int));
 	char* new_binary_string = malloc ((num_values+1)*sizeof (char));
 	for (int i = 0; i < num_values+1; i++){
